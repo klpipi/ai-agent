@@ -28,4 +28,12 @@ class CompanionAppTest {
         Assertions.assertNotNull(answer);*/
     }
 
+    @Test
+    void doChatWithReport(){
+        String chatId = UUID.randomUUID().toString();
+        String message = "你好，我是小奇,我即将大学毕业，面临就业压力，怎么办";
+        CompanionApp.ChatReport chatReport = companionApp.doChatWithReport(message, chatId);
+        Assertions.assertNotNull(chatReport);
+    }
+
 }

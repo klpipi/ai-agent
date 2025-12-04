@@ -1,6 +1,8 @@
 package com.atguigu.aiagent.app;
 
+import com.atguigu.aiagent.advisor.MyLoggerAdvisor;
 import lombok.extern.slf4j.Slf4j;
+import org.jetbrains.annotations.TestOnly;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.client.advisor.MessageChatMemoryAdvisor;
 import org.springframework.ai.chat.memory.ChatMemory;
@@ -8,6 +10,8 @@ import org.springframework.ai.chat.memory.InMemoryChatMemory;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.stereotype.Component;
+
+import java.util.List;
 
 import static org.springframework.ai.chat.client.advisor.AbstractChatMemoryAdvisor.CHAT_MEMORY_CONVERSATION_ID_KEY;
 import static org.springframework.ai.chat.client.advisor.AbstractChatMemoryAdvisor.CHAT_MEMORY_RETRIEVE_SIZE_KEY;
@@ -25,7 +29,9 @@ public class CompanionApp {
         chatClient=ChatClient.builder(dashscopeChatModel)
                 .defaultSystem(systemPrompt)
                 .defaultAdvisors(
-                        new MessageChatMemoryAdvisor(chatMemory)
+                        new MessageChatMemoryAdvisor(chatMemory),
+                        //自定义日志拦截器，可按需开启
+                        new MyLoggerAdvisor()
                 )
                 .build();
     }
@@ -41,7 +47,30 @@ public class CompanionApp {
                 .chatResponse();
 
         String content = chatResponse.getResult().getOutput().getText();
-        log.info("content: {}",content);
+        //log.info("content: {}",content);
         return content;
     }
+
+
+    record ChatReport (String title, List<String> suggestions){
+
+    }
+
+    //结构化输出
+    public ChatReport doChatWithReport(String message,String chatId){ //不同对话id隔离开
+        ChatReport chatReport = chatClient
+                .prompt()
+                .system(systemPrompt+"每次对话后都生成分析报告，标题为{用户名}的心理分析报告，内容为给用户的建议")
+                .user(message)
+                .advisors(spec -> spec.param(CHAT_MEMORY_CONVERSATION_ID_KEY, chatId)
+                        .param(CHAT_MEMORY_RETRIEVE_SIZE_KEY, 10)
+                )
+                .call()
+                .entity(ChatReport.class);
+
+        log.info("chatReport: {}",chatReport);
+        return chatReport;
+    }
+
+
 }
