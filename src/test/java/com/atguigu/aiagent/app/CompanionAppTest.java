@@ -36,4 +36,12 @@ class CompanionAppTest {
         Assertions.assertNotNull(chatReport);
     }
 
+    @Test
+    void doChatWithRag(){
+        String chatId = UUID.randomUUID().toString();
+        String message = "我总是拖延，容易焦虑怎么办";
+        String answer = companionApp.chatWithRag(message, chatId);
+        Assertions.assertNotNull(answer);
+    }
+
 }

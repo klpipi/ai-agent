@@ -2,14 +2,18 @@ package com.atguigu.aiagent.app;
 
 import com.atguigu.aiagent.advisor.MyLoggerAdvisor;
 import com.atguigu.aiagent.chatmemory.FileBasedChatMemory;
+import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.TestOnly;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.client.advisor.MessageChatMemoryAdvisor;
+import org.springframework.ai.chat.client.advisor.QuestionAnswerAdvisor;
+import org.springframework.ai.chat.client.advisor.api.Advisor;
 import org.springframework.ai.chat.memory.ChatMemory;
 import org.springframework.ai.chat.memory.InMemoryChatMemory;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ChatResponse;
+import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
@@ -71,7 +75,7 @@ public class CompanionApp {
                 .system(systemPrompt+"每次对话后都生成分析报告，标题为{用户名}的心理分析报告，内容为给用户的建议")
                 .user(message)
                 .advisors(spec -> spec.param(CHAT_MEMORY_CONVERSATION_ID_KEY, chatId)
-                        .param(CHAT_MEMORY_RETRIEVE_SIZE_KEY, 10)
+                        .param(CHAT_MEMORY_RETRIEVE_SIZE_KEY, 10) //保存最近10条对话记忆
                 )
                 .call()
                 .entity(ChatReport.class);
@@ -80,5 +84,27 @@ public class CompanionApp {
         return chatReport;
     }
 
+    @Resource
+    private VectorStore myVectorStore ;
+    @Resource
+    private Advisor ragCloudAdvisor;
+
+    public String chatWithRag(String message,String chatId){
+        ChatResponse chatResponse = chatClient
+                .prompt()
+                .user(message)
+                .advisors(spec -> spec.param(CHAT_MEMORY_CONVERSATION_ID_KEY, chatId)
+                        .param(CHAT_MEMORY_RETRIEVE_SIZE_KEY, 10)
+                )
+                .advisors(new MyLoggerAdvisor())
+                //.advisors(new QuestionAnswerAdvisor(myVectorStore))
+                //rag检索增强服务
+                .advisors(ragCloudAdvisor)
+                .call()
+                .chatResponse();
+        String text = chatResponse.getResult().getOutput().getText();
+        log.info("chatReport: {}",chatResponse);
+        return text;
+    }
 
 }
