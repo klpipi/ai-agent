@@ -41,9 +41,9 @@ public class CompanionApp {
         chatClient=ChatClient.builder(dashscopeChatModel)
                 .defaultSystem(systemPrompt)
                 .defaultAdvisors(
-                        new MessageChatMemoryAdvisor(chatMemory),
+                        new MessageChatMemoryAdvisor(chatMemory)
                         //自定义日志拦截器，可按需开启
-                        new MyLoggerAdvisor()
+                       // ,new MyLoggerAdvisor()
                 )
                 .build();
     }
